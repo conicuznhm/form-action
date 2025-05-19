@@ -1,8 +1,8 @@
-version: '3.8'
+version: '3.9'
 
 services:
   form-vite:
-    image: form-vite:1
+    image: ghcr.io/conicuznhm/form-vite:1
     build:
       context: ./fill-vite
       dockerfile: Dockerfile
@@ -17,13 +17,13 @@ services:
     restart: unless-stopped
 
   form-api:
-    image: form-api:1
+    image: ghcr.io/conicuznhm/form-api:1
     build:
-      context: ./fill-form-prisma
+      context: ./fill-api
       dockerfile: Dockerfile
     container_name: form-api
     env_file:
-      - ./fill-form-prisma/.env.local
+      - ./fill-api/.env.local
     # Alternatively, set environment variables explicitly (uncomment if not using .env.local)
     # environment:
     #   - DATABASE_URL=postgresql://postgres:password@form-psql:5432/form_db
@@ -65,9 +65,9 @@ services:
 networks:
   my-network:
     name: my-network
-    external: true
+    external: true   # use existing network
 
 volumes:
   form-data:
     name: form-data
-    external: true
+    external: true   # use existing volume
