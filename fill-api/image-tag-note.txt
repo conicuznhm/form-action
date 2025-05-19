@@ -1,0 +1,73 @@
+form-api:v1 = Server is runing on localhost:8899, use psql ip to connect 
+		api on my-network, ip:10.89.0._ 
+		database psql on podman(default network), fixed ip:10.88.0.20 
+
+form-api:v2 = Server is running on http://0.0.0.0:8899, use psql ip to connect 
+		api on my-network, ip:10.89.0._ 
+		database psql on podman(default network), fixed ip:10.88.0.20 
+
+form-api:v3 = Server is running on http://0.0.0.0:8899, use psql container name to connect by DNS resolver of podman built-in 
+		api on my-network, ip:10.89.0._ 
+		database psql on my-network(in the same as api network), ip:10.88.0._
+
+
+
+
+//for build image api
+podman build -t form-api:v1 --no-cache .
+podman build -t form-api:v1 .
+
+podman network create my-network
+podman network create --driver bridge --subnet 10.89.0.0/24 --gateway 10.89.0.1 my-network
+
+
+for v3 run
+//for database connect to postgres by using DNS resolver from container name, vite,api,psql are in the same network
+podman network create my-network
+
+//psql
+podman volume create form-data
+podman run --name form-psql \
+-e POSTGRES_PASSWORD=password \
+-e POSTGRES_DB=form_db \
+-v form-data:/var/lib/postgresql/data \
+--network my-network \
+-p 5432:5432 \
+-d postgres:17.5
+
+//for run api
+podman run --name form-api --env-file .env.local --network my-network -p 8899:8899 -d form-api:v3
+	or
+podman run --name form-api \
+ -e DATABASE_URL=postgresql://postgres:password@form-psql:5432/form_db \
+ -e PORT=8899 \
+ --network my-network \
+ -p 8899:8899 \
+ -d form-api:v3
+
+//vite
+podman run --name form-vite --network my-network -p 80:80 -d form-vite:v2
+
+
+for tag v1 run
+use podman default network (podman) at dev time network id = 10.88.0.0/16
+//psql
+podman volume create form-data
+podman run --name postgres-form \
+ -e POSTGRES_PASSWORD=password \
+ -e POSTGRES_DB=form_db \
+ -v form-data:/var/lib/postgresql/data \
+ -p 5432:5432 \
+ --ip 10.88.0.35 \
+ -d postgres:17.5
+
+//api
+podman run --name form-api --env-file .env.local -p 8899:8899 -d form-api:v1
+podman run --name form-api \
+ -e DATABASE_URL=postgresql://postgres:password@10.88.0.35:5432/form_db \
+ -e PORT=8899 \
+ -p 8899:8899 \
+ -d form-api:v1
+
+//vite
+ podman run --name form-vite -p 80:80 -d form-vite:v1

@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  form-api:
+    image: form-api:v4
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: form-api
+    env_file:
+      - .env.local
+    # Alternatively, set environment variables explicitly (uncomment if not using .env.local)
+    # environment:
+    #   - DATABASE_URL=postgresql://postgres:password@form-psql:5432/form_db
+    #   - PORT=8899
+    networks:
+      - my-network
+    ports:
+      - "8899:8899"
+    depends_on:
+      form-psql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  form-psql:
+    image: postgres:17.5
+    container_name: form-psql
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=form_db
+    volumes:
+      - form-data:/var/lib/postgresql/data
+    networks:
+      - my-network
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  my-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.89.0.0/24
+          gateway: 10.89.0.1
+
+volumes:
+  form-data:
+    name: form-data

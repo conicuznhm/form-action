@@ -1,0 +1,13 @@
+# Module directories
+**/node_modules/
+**/dist/
+**/*.local
+
+# Editor directories and files
+**/.vscode/*
+!**/.vscode/extensions.json
+
+# ENV file for demo lab only, should comment out on production or use  .env.production
+# .env
+# .env.local
+!**/.env.local

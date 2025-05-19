@@ -1,0 +1,9 @@
+node_modules/
+dist/
+docker-compose.*
+.git
+.gitignore
+nginx-fail-over.test.conf
+.vite
+old.entrypoint.sh
+test.entrypoint.sh
