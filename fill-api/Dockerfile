@@ -30,7 +30,13 @@ FROM node:24-alpine
 # Set working directory for runtime
 WORKDIR /app
 
-# Install pnpm globally in the runtime image
+# //Creates only one image layer, which reduces image size, Faster build due to fewer intermediate layers
+# RUN apk add --no-cache curl && npm install -g pnpm@10.10.0
+
+# //Install curl if needed or use wget instead (node:24-alpine has wget)
+# RUN apk add --no-cache curl
+
+# Install pnpm globally in the runtime image 
 RUN npm install -g pnpm@10.10.0
 
 # Copy only necessary files from the builder stage

@@ -145,3 +145,17 @@ wait_for_form_api
 # Start nginx with daemon off
 echo "Starting nginx..."
 nginx -g 'daemon off;'
+
+
+
+//for podman in ubuntu
+//to resolve docker service endpoint --> need to set  registries.conf
+
+sudo vi /etc/containers/registries.conf
+
+[registries.search]
+registries = ['docker.io']
+
+
+//or use full url to pull image
+ docker.io/library/postgres:17.5

@@ -8,9 +8,9 @@ services:
     #   dockerfile: Dockerfile
     container_name: form-vite
     networks:
-      - form-network
+      - my-network
     ports:
-      - "8888:80"
+      - "80:80"
     depends_on:
       form-api:
         condition: service_healthy
@@ -29,31 +29,30 @@ services:
     #   - DATABASE_URL=postgresql://postgres:password@form-psql:5432/form_db
     #   - PORT=8899
     networks:
-      - form-network
+      - my-network
     ports:
       - "8899:8899"
     depends_on:
       form-psql:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider --quiet --tries=1 --timeout=2 http://localhost:8899/health || exit 1"]
-      # test: ["CMD-SHELL", "curl -f http://localhost:8899/health || exit 1"]     # //if curl is installed
+      test: ["CMD-SHELL", "curl -f http://localhost:8899 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
   form-psql:
-    image: postgres:17.5  # or full path for podman : docker.io/library/postgres:17.5
+    image: postgres:17.5
     container_name: form-psql
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=form_db
     volumes:
-      - fill-data:/var/lib/postgresql/data
+      - form-data:/var/lib/postgresql/data
     networks:
-      - form-network
+      - my-network
     ports:
       - "5432:5432"
     healthcheck:
@@ -64,11 +63,11 @@ services:
     restart: unless-stopped
 
 networks:
-  form-network:
-    name: form-network
-    # external: true   # use existing network
+  my-network:
+    name: my-network
+    external: true   # use existing network
 
 volumes:
-  fill-data:
-    name: fill-data
-    # external: true   # use existing volume
+  form-data:
+    name: form-data
+    external: true   # use existing volume
