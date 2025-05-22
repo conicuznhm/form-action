@@ -5,6 +5,7 @@ dist/
 Dockerfile
 old.Dockerfile
 docker-compose.*
+old.docker-compose.*
 .git/
 .gitignore
 .vscode/

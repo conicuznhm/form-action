@@ -1,9 +1,10 @@
-version: '3.9'
+version: '4.0'
 
 services:
   form-vite:
-    image: ghcr.io/conicuznhm/form-vite:1
-    # build:
+    image: ghcr.io/conicuznhm/form-vite:2  # need to comment object build if want to make pull this image
+    # //uncomment object build if you want to build the image locally, the image will tag and name ghcr.io/conicuznhm/form-vite:2
+    # build:  
     #   context: ./fill-vite
     #   dockerfile: Dockerfile
     container_name: form-vite
@@ -17,14 +18,15 @@ services:
     restart: unless-stopped
 
   form-api:
-    image: ghcr.io/conicuznhm/form-api:1
-    # build:
+    image: ghcr.io/conicuznhm/form-api:2  # need to comment object build if want to make pull this image
+    # //uncomment object build if you want to build the image locally, the image will tag and name ghcr.io/conicuznhm/form-api:2
+    # build:  
     #   context: ./fill-api
     #   dockerfile: Dockerfile
     container_name: form-api
     env_file:
       - ./fill-api/.env.local
-    # Alternatively, set environment variables explicitly (uncomment if not using .env.local)
+    # //Alternatively, set environment variables explicitly (uncomment if not using .env.local)
     # environment:
     #   - DATABASE_URL=postgresql://postgres:password@form-psql:5432/form_db
     #   - PORT=8899

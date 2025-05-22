@@ -1,0 +1,65 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-5.5.0
+
+# NOTE: The namespace sharing for a pod has been modified by the user and is not the same as the
+# default settings for kubernetes. This can lead to unexpected behavior when running the generated
+# kube yaml in a kubernetes cluster.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    io.kubernetes.cri-o.SandboxID/form-api: 44103592fc4d1181fa5e4f8a14e917c09a090b60cc9c8d131dbbc9e76e1446d5
+    io.kubernetes.cri-o.SandboxID/form-psql: 44103592fc4d1181fa5e4f8a14e917c09a090b60cc9c8d131dbbc9e76e1446d5
+    io.kubernetes.cri-o.SandboxID/form-vite: 44103592fc4d1181fa5e4f8a14e917c09a090b60cc9c8d131dbbc9e76e1446d5
+  creationTimestamp: "2025-05-21T17:58:48Z"
+  labels:
+    app: podform-app
+  name: podform-app
+spec:
+  containers:
+  - args:
+    - postgres
+    env:
+    - name: POSTGRES_USER
+      value: postgres
+    - name: POSTGRES_DB
+      value: form_db
+    - name: POSTGRES_PASSWORD
+      value: password
+    image: docker.io/library/postgres:17.5
+    name: form-psql
+    ports:
+    - containerPort: 5432
+      hostPort: 5432
+    volumeMounts:
+    - mountPath: /var/lib/postgresql/data
+      name: fill-data-pvc
+  - args:
+    - pnpm
+    - start
+    env:
+    - name: NODE_ENV
+      value: development
+    - name: PORT
+      value: "8899"
+    - name: FRONTEND_URL
+      value: http://localhost
+    - name: DATABASE_URL
+      value: postgresql://postgres:password@form-psql:5432/form_db
+    image: ghcr.io/conicuznhm/form-api:1
+    name: form-api
+    ports:
+    - containerPort: 8899
+      hostPort: 8899
+  - image: ghcr.io/conicuznhm/form-vite:1
+    name: form-vite
+    ports:
+    - containerPort: 80
+      hostPort: 8888
+  volumes:
+  - name: fill-data-pvc
+    persistentVolumeClaim:
+      claimName: fill-data
