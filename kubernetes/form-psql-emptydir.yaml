@@ -1,0 +1,58 @@
+---
+# psql deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: psql-deployment
+  labels:
+    app: psql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: psql
+  template:
+    metadata:
+      labels:
+        app: psql
+    spec:
+      containers:
+      - name: psql
+        image: postgres:17
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "password"
+        - name: POSTGRES_DB
+          value: "form_db"
+        volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: pgdata
+        emptyDir: {}
+---
+# psql service
+apiVersion: v1
+kind: Service
+metadata:
+  name: psql-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: psql
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+---

@@ -1,0 +1,112 @@
+---
+# psql secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: psql-secret
+type: Opaque
+data:
+  POSTGRES_PASSWORD: cGFzc3dvcmQ=  # base64 encoded 'password'
+---
+# psql config map
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: psql-config
+data:
+  POSTGRES_USER: postgres
+  POSTGRES_DB: form_db
+---
+# psql pv
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: psql-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain  # Change to 'Delete' if you want to delete PV when PVC is deleted, by default value is ':Delete' 
+  hostPath:
+    path: /data/postgres
+---
+# psql pvc
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: psql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# psql deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: psql-deployment
+  labels:
+    app: psql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: psql
+  template:
+    metadata:
+      labels:
+        app: psql
+    spec:
+      containers:
+      - name: psql
+        image: postgres:17
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: psql-config
+              key: POSTGRES_USER
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: psql-config
+              key: POSTGRES_DB
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: psql-secret
+              key: POSTGRES_PASSWORD
+        volumeMounts:
+        - name: psql-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: psql-storage
+        persistentVolumeClaim:
+          claimName: psql-pvc
+---
+# psql service
+apiVersion: v1
+kind: Service
+metadata:
+  name: psql-svc
+spec:
+  type: ClusterIP
+  selector:
+    app: psql
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+---
