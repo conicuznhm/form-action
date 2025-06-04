@@ -1,0 +1,27 @@
+---
+# pv
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: form-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain  # Change to 'Delete' if you want to delete PV when PVC is deleted, by default value is ':Delete'
+  hostPath:
+    path: /data/psql  # Ensure this path exists on the host machine
+---
+# pvc
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: form-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---

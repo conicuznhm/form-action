@@ -1,0 +1,58 @@
+---
+# postgres deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: form-psql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: form-psql
+  template:
+    metadata:
+      labels:
+        app: form-psql
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17.5
+          envFrom:
+            - secretRef:
+                name: form-secret
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: psql-storage
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: psql-storage
+          persistentVolumeClaim:
+            claimName: form-pvc
+---
+# database service
+apiVersion: v1
+kind: Service
+metadata:
+  name: psql-service
+spec:
+  type: ClusterIP
+  selector:
+    app: form-psql
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---

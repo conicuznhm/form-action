@@ -1,0 +1,12 @@
+# config map for database psql
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: form-config
+data:
+  NODE_ENV: development
+  PORT: "8899"
+  FRONTEND_URL: http://localhost
+  DATABASE_URL: postgresql://postgres:password@psql-service:5432/form_db
+---
