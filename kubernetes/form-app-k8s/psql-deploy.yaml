@@ -30,6 +30,8 @@ spec:
               command: ["pg_isready", "-U", "postgres"]
             initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
           resources:
             requests:
               memory: "256Mi"
@@ -46,7 +48,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: psql-service
+  name: psql-service # name of the service must match DATABASE_URL in configmap (postgresql://postgres:password@psql-service:5432/form_db)
 spec:
   type: ClusterIP
   selector:

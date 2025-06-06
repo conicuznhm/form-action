@@ -1,0 +1,71 @@
+---
+# form-api deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: form-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: form-api
+  template:
+    metadata:
+      labels:
+        app: form-api
+    spec:
+      containers:
+        - name: form-api
+          image: ghcr.io/conicuznhm/form-api:2
+          ports:
+            - containerPort: 8899
+          envFrom:
+            - configMapRef:
+                name: form-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-url-secret
+                  key: DATABASE_URL
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8899
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: ghcr-secret # credentail for pulling image from private registry
+      # restartPolicy: Always # always restart the container if it fails, for development only Always is allowed and automatically default set by kubernetes 
+      # for pod restart policy is no default set, must set manually (Always, OnFailure, Never)
+---
+# api service
+apiVersion: v1
+kind: Service
+metadata:
+  name: form-api # name of the service must match proxy_pass in nginx config location /api/ (http://form-api:8899;)
+spec:
+  type: ClusterIP
+  selector:
+    app: form-api # selector must match app label in deployment template metadata (labels: app: form-api)
+  ports:
+    - protocol: TCP
+      port: 8899
+      targetPort: 8899
+---
+
+# cmd to create secret for docker registry to pull image from private github-container-registry(ghcr)
+# kubectl create secret docker-registry ghcr-secret \
+# --docker-server=https://ghcr.io \
+# --docker-username=<GITHUB_USERNAME> \
+# --docker-password=<GITHUB_TOKEN_PAT classic for ghcr.io> \
+# --docker-email=<EMAIL> (optional, kubernetes 1.9+ does not require email for ghcr.io)
