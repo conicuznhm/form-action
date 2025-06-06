@@ -63,9 +63,22 @@ spec:
       targetPort: 8899
 ---
 
-# cmd to create secret for docker registry to pull image from private github-container-registry(ghcr)
+# //cmd to create secret for docker registry to pull image from private github-container-registry(ghcr)
 # kubectl create secret docker-registry ghcr-secret \
 # --docker-server=https://ghcr.io \
 # --docker-username=<GITHUB_USERNAME> \
 # --docker-password=<GITHUB_TOKEN_PAT classic for ghcr.io> \
 # --docker-email=<EMAIL> (optional, kubernetes 1.9+ does not require email for ghcr.io)
+
+# //with kubeseal
+# //cmd to create secret for docker registry to pull image from private github-container-registry(ghcr)
+# kubectl create secret docker-registry ghcr-secret \
+# --docker-server=https://ghcr.io \
+# --docker-username=<GITHUB_USERNAME> \
+# --docker-password=<GITHUB_TOKEN_PAT classic for ghcr.io> \
+# --dry-run=client -o json > ghcr-secret.json
+
+# //client -o can set to json, yaml, etc.
+
+# //cmd to seal the secret
+# kubeseal --controller-name=sealed-secrets --controller-namespace=kube-system < ghcr-secret.json > sealed-ghcr-secret.yaml
