@@ -82,3 +82,4 @@ spec:
 
 # //cmd to seal the secret
 # kubeseal --controller-name=sealed-secrets --controller-namespace=kube-system < ghcr-secret.json > sealed-ghcr-secret.yaml
+#                      pod name                         namespace    
