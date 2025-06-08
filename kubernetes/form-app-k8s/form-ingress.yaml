@@ -1,0 +1,22 @@
+---
+# vite nginx ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vite-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    # - host: form-vite.local # change this to your domain or IP
+    - host: "" # use empty host ("") to match all requests
+      http:
+        paths:
+          - path: /(.*) # match all paths
+            pathType: Prefix
+            backend:
+              service:
+                name: form-vite # name of the service must match service name in vite-deploy.yaml
+                port:
+                  number: 80 # port of the service
+---

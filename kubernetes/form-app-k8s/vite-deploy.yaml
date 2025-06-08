@@ -1,0 +1,46 @@
+---
+# vite deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: form-vite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: form-vite
+  template:
+    metadata:
+      labels:
+        app: form-vite
+    spec:
+      containers:
+        - name: form-vite
+          image: ghcr.io/conicuznhm/form-vite:2
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      imagePullSecrets:
+        - name: ghcr-secret # credential for pulling image from private registry
+      # restartPolicy: Always # always restart the container if it fails, for development only Always is allowed and automatically default set by kubernetes
+---
+# vite service
+apiVersion: v1
+kind: Service
+metadata:
+  name: form-vite
+spec:
+  type: ClusterIP
+  selector:
+    app: form-vite # selector must match app label in deployment template metadata (labels: app: form-vite)
+  ports:
+    - protocol: TCP
+      port: 80 # port of the service
+      targetPort: 80 # target port of the container
+---
