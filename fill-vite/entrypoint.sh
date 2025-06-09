@@ -5,7 +5,8 @@ set -e
 ./start.sh
 
 # Start the tunnel and wait for URL
-./run-tunnel.sh
+# //Uncomment ./run-tunnel.sh if you want to run the tunnel script, need to install cloudflared and uncomment run-tunnel.sh in Dockerfile
+# ./run-tunnel.sh
 
 # Start nginx in foreground
 echo "Starting nginx..."
