@@ -1,4 +1,6 @@
 ---
+# //note: This file is used to create an Ingress resource for the form application.
+# //don't kubectl apply ingress.yaml, if the image already installed cloudflared and run cloudflared tunnel 
 # vite nginx ingress
 apiVersion: networking.k8s.io/v1
 kind: Ingress
