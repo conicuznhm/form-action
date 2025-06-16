@@ -1,6 +1,9 @@
 # Build vite
 FROM node:24-alpine AS build
 
+# Label
+LABEL version="1.0.0"
+
 WORKDIR /app
 
 RUN npm install -g pnpm

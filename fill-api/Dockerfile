@@ -1,6 +1,9 @@
 # Build stage
 FROM node:24-alpine AS builder
 
+# Label
+LABEL version="1.0.0"
+
 # Set working directory for build
 WORKDIR /app
 
