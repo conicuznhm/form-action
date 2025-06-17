@@ -5,7 +5,7 @@ pipeline {
         REGISTRY = "ghcr.io/conicuznhm"
         IMAGE_API = "form-api"
         IMAGE_VITE = "form-vite"
-        DOCKER_CREDENTIALS_ID = "ghcr"
+        CONTAINER_CREDENTIALS_ID = "ghcr"
     }
 
     triggers {
@@ -52,7 +52,7 @@ pipeline {
 
         stage('Login to GHCR') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", usernameVariable: 'USERNAME', passwordVariable: 'TOKEN')]) {
+                withCredentials([usernamePassword(credentialsId: "${CONTAINER_CREDENTIALS_ID}", usernameVariable: 'USERNAME', passwordVariable: 'TOKEN')]) {
                     sh "echo $TOKEN | docker login ghcr.io -u $USERNAME --password-stdin"
                 }
             }
