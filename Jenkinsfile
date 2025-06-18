@@ -1,3 +1,11 @@
+//Define the helper function at the top level
+def getVersion = { path ->
+    def result = sh(script: "grep version ${path} | cut -d'\"' -f2 || true", returnStdout: true).trim()
+    // return (result != "") ? result : null //explicitly checks for an empty string
+    return result ?: null // Groovy shothand for return (result != "") ? result : null
+
+}
+
 pipeline {
     agent any
 
@@ -22,12 +30,6 @@ pipeline {
         stage('Check Version Changes') {
             steps {
                 script {
-                    def getVersion = { path ->
-                        def result = sh(script: "grep version ${path} | cut -d'\"' -f2 || true", returnStdout: true).trim()
-                        // return (result != "") ? result : null //explicitly checks for an empty string
-                        return result ?: null // Groovy shothand for return (result != "") ? result : null
-                    }
-
                     def versionChanged = { path ->
                         // def current = sh(script: "grep version ${path} | cut -d'\"' -f2", returnStdout: true).trim()
                         def current = getVersion(path)
@@ -49,14 +51,6 @@ pipeline {
         stage('Build Images') {
             steps {
                 script {
-                    def getVersion = { path ->
-                        def result = sh(script: "grep version ${path} | cut -d'\"' -f2 || true", returnStdout: true).trim()
-                        if (!result) {
-                            error "No version found in ${path}"
-                        }
-                        return result
-                    }
-
                     if (env.BUILD_API?.toBoolean()) {
                         // def version = sh(script: "grep version fill-api/Dockerfile | cut -d'\"' -f2", returnStdout: true).trim()
                         def version = getVersion('fill-api/Dockerfile')
