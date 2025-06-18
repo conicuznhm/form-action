@@ -34,12 +34,12 @@ pipeline {
         stage('Build Changed Images') {
             steps {
                 script {
-                    if (env.BUILD_API.toBoolean()) {
+                    if (env.BUILD_API?.toBoolean()) {
                         echo "Building form-api image..."
                         sh "docker build -t $REGISTRY/$IMAGE_API:$TAG ./fill-api"
                     }
 
-                    if (env.BUILD_VITE.toBoolean()) {
+                    if (env.BUILD_VITE?.toBoolean()) {
                         echo "Building form-vite image..."
                         sh "docker build -t $REGISTRY/$IMAGE_VITE:$TAG ./fill-vite"
                     }
@@ -58,11 +58,13 @@ pipeline {
         stage('Push Images to GHCR') {
             steps {
                 script {
-                    if (env.BUILD_API.toBoolean()) {
+                    if (env.BUILD_API?.toBoolean()) {
+                        echo "Pushing $REGISTRY/$IMAGE_API:$TAG image..."
                         sh "docker push $REGISTRY/$IMAGE_API:$TAG"
                     }
 
-                    if (env.BUILD_VITE.toBoolean()) {
+                    if (env.BUILD_VITE?.toBoolean()) {
+                        echo "Pushing $REGISTRY/$IMAGE_VITE:$TAG image..."
                         sh "docker push $REGISTRY/$IMAGE_VITE:$TAG"
                     }
                 }

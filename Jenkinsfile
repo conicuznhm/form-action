@@ -21,29 +21,55 @@ pipeline {
 
         stage('Check Version Changes') {
             steps {
-                def versionChanged = { path ->
-                    def current = sh(script: "grep version ${path} | cut -d'\"' -f2", returnStdout: true).trim()
-                    def remote = sh(script: "git fetch origin main && git show origin/main:${path} | grep version | cut -d'\"' -f2", returnStdout: true).trim()
-                    return current != remote
-                }
+                script {
+                    def getVersion = { path ->
+                        def result = sh(script: "grep version ${path} | cut -d'\"' -f2 || true", returnStdout: true).trim()
+                        // return (result != "") ? result : null //explicitly checks for an empty string
+                        return result ?: null // Groovy shothand for return (result != "") ? result : null
+                    }
 
-                env.BUILD_API = versionChanged('fill-api/Dockerfile')? "true" : "false"
-                env.BUILD_VITE = versionChanged('fill-vite/Dockerfile')? "true" : "false"
+                    def versionChanged = { path ->
+                        // def current = sh(script: "grep version ${path} | cut -d'\"' -f2", returnStdout: true).trim()
+                        def current = getVersion(path)
+                        def remote = sh(script: "git fetch origin main && git show origin/main:${path} | grep version | cut -d'\"' -f2", returnStdout: true).trim()
+                        if (!current || !remote) {
+                            echo "Skipping build for ${path} - missing or invalid version"
+                            return false
+                        }
+                        return current != remote
+                    }
+
+                    env.BUILD_API = versionChanged('fill-api/Dockerfile')? "true" : "false"
+                    env.BUILD_VITE = versionChanged('fill-vite/Dockerfile')? "true" : "false"
+
+                }
             }
         }
 
         stage('Build Images') {
             steps {
                 script {
-                    if (env.BUILD_API.toBoolean()) {
-                        def version = sh(script: "grep version fill-api/Dockerfile | cut -d'\"' -f2", returnStdout: true).trim()
+                    def getVersion = { path ->
+                        def result = sh(script: "grep version ${path} | cut -d'\"' -f2 || true", returnStdout: true).trim()
+                        if (!result) {
+                            error "No version found in ${path}"
+                        }
+                        return result
+                    }
+
+                    if (env.BUILD_API?.toBoolean()) {
+                        // def version = sh(script: "grep version fill-api/Dockerfile | cut -d'\"' -f2", returnStdout: true).trim()
+                        def version = getVersion('fill-api/Dockerfile')
                         env.API_TAG = version
+                        echo "Building form-api:${version} image..."
                         sh "docker build -t $REGISTRY/$IMAGE_API:${version} ./fill-api"
                     }
 
-                    if (env.BUILD_VITE.toBoolean()) {
-                        def version = sh(script: "grep version fill-vite/Dockerfile | cut -d'\"' -f2", returnStdout: true).trim()
+                    if (env.BUILD_VITE?.toBoolean()) {
+                        // def version = sh(script: "grep version fill-vite/Dockerfile | cut -d'\"' -f2", returnStdout: true).trim()
+                        def version = getVersion('fill-vite/Dockerfile')
                         env.VITE_TAG = version
+                        echo "Building form-vite:${version} image..."
                         sh "docker build -t $REGISTRY/$IMAGE_VITE:${version} ./fill-vite"
                     }
                 }
@@ -61,10 +87,12 @@ pipeline {
         stage('Push Images') {
             steps {
                 script {
-                    if (env.BUILD_API.toBoolean()) {
+                    if (env.BUILD_API?.toBoolean()) {
+                        echo "Pushing $REGISTRY/$IMAGE_API:${env.API_TAG} image..."
                         sh "docker push $REGISTRY/$IMAGE_API:${env.API_TAG}"
                     }
-                    if (env.BUILD_VITE.toBoolean()) {
+                    if (env.BUILD_VITE?.toBoolean()) {
+                        echo "Pushing $REGISTRY/$IMAGE_VITE:${env.VITE_TAG} image..."
                         sh "docker push $REGISTRY/$IMAGE_VITE:${env.VITE_TAG}"
                     }
                 }
