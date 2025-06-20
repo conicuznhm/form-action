@@ -48,13 +48,20 @@ pipeline {
                                 returnStdout: true
                             ).trim()
                         }
-                        
+
+                        // Add debug output here
+                        echo "Comparing version in: ${path}"
+                        echo "Current version: ${current}"
+                        echo "Remote version: ${remote}"
+
                         if (!current || !remote) {
                             echo "Skipping build for ${path} - missing or invalid version"
                             return false
                         }
 
-                        return current != remote
+                        def changed = current != remote
+                        echo "Version changed: ${changed}"
+                        return changed
                     }
 
                     env.BUILD_API = versionChanged('fill-api/Dockerfile')? "true" : "false"
