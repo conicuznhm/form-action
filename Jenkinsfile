@@ -14,7 +14,7 @@ pipeline {
         IMAGE_API = "form-api"
         IMAGE_VITE = "form-vite"
         CONTAINER_CREDENTIALS_ID = "ghcr"
-        GIT_CREDENTIALS_ID = "github-pat" // GitHub Personal Access Token for secure access
+        GITHUB_CREDENTIALS_ID = "github-pat" // GitHub Personal Access Token:PAT stored in Jenkins
     }
 
     triggers {
@@ -24,14 +24,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Secure checkout using credentialsId
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/conicuznhm/form-app.git',
-                        credentialsId: "${GIT_CREDENTIALS_ID}" // use GitHub PAT stored in Jenkins
-                    ]]
-                ])
+                git url: 'https://github.com/conicuznhm/form-app.git',
+                    branch: 'main',
+                    credentialsId: "${GITHUB_CREDENTIALS_ID}" // use GitHub PAT stored in Jenkins
             }
         }
 
@@ -39,19 +34,31 @@ pipeline {
             steps {
                 script {
                     def versionChanged = { path ->
-                        // def current = sh(script: "grep version ${path} | cut -d'\"' -f2", returnStdout: true).trim()
                         def current = getVersion(path)
-                        def remote = sh(script: "git fetch origin main && git show origin/main:${path} | grep version | cut -d'\"' -f2", returnStdout: true).trim()
+                        def remote = ""
+                        
+                        withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS_ID}", usernameVariable: 'USERNAME', passwordVariable: 'TOKEN')]) {
+                            // Inject token for fetching remote Dockerfile content
+                            remote = sh(
+                                script: """
+                                    git remote set-url origin https://${USERNAME}:${TOKEN}@github.com/conicuznhm/form-app.git
+                                    git fetch origin main > /dev/null
+                                    git show origin/main:${path} | grep version | cut -d'\"' -f2 || true
+                                """,
+                                returnStdout: true
+                            ).trim()
+                        }
+                        
                         if (!current || !remote) {
                             echo "Skipping build for ${path} - missing or invalid version"
                             return false
                         }
+
                         return current != remote
                     }
 
                     env.BUILD_API = versionChanged('fill-api/Dockerfile')? "true" : "false"
                     env.BUILD_VITE = versionChanged('fill-vite/Dockerfile')? "true" : "false"
-
                 }
             }
         }
