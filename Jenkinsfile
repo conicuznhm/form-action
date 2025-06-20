@@ -1,6 +1,6 @@
 //Define the helper function at the top level
 def getVersion = { path ->
-    def result = sh(script: "grep version ${path} | cut -d'\"' -f2 || true", returnStdout: true).trim()
+    def result = sh(script: "grep '^LABEL version' ${path} | cut -d'\"' -f2 || true", returnStdout: true).trim()
     // return (result != "") ? result : null //explicitly checks for an empty string
     return result ?: null // Groovy shothand for return (result != "") ? result : null
 
@@ -13,8 +13,8 @@ pipeline {
         REGISTRY = "ghcr.io/conicuznhm"
         IMAGE_API = "form-api"
         IMAGE_VITE = "form-vite"
-        CONTAINER_CREDENTIALS_ID = "ghcr"
-        GITHUB_CREDENTIALS_ID = "github-pat" // GitHub Personal Access Token:PAT stored in Jenkins
+        CONTAINER_CREDENTIALS_ID = "ghcr" // for pushing to GHCR
+        GITHUB_CREDENTIALS_ID = "github-pat" // GitHub Personal Access Token:PAT stored in Jenkins, optional, for clone access
     }
 
     triggers {
@@ -35,31 +35,22 @@ pipeline {
                 script {
                     def versionChanged = { path ->
                         def current = getVersion(path)
-                        def remote = ""
+                        def previous = sh(
+                            script: "git show HEAD~1:${path} | grep '^LABEL version' | cut -d'\"' -f2 || true",
+                            returnStdout: true
+                        ).trim()
                         
-                        withCredentials([usernamePassword(credentialsId: "${GITHUB_CREDENTIALS_ID}", usernameVariable: 'USERNAME', passwordVariable: 'TOKEN')]) {
-                            // Inject token for fetching remote Dockerfile content
-                            remote = sh(
-                                script: """
-                                    git remote set-url origin https://${USERNAME}:${TOKEN}@github.com/conicuznhm/form-app.git
-                                    git fetch origin main > /dev/null
-                                    git show origin/main:${path} | grep version | cut -d'\"' -f2 || true
-                                """,
-                                returnStdout: true
-                            ).trim()
-                        }
-
-                        // Add debug output here
+                        // For debug version comparison
                         echo "Comparing version in: ${path}"
                         echo "Current version: ${current}"
-                        echo "Remote version: ${remote}"
+                        echo "Previous version: ${previous}"
 
-                        if (!current || !remote) {
+                        if (!current || !previous) {
                             echo "Skipping build for ${path} - missing or invalid version"
                             return false
                         }
 
-                        def changed = current != remote
+                        def changed = current != previous
                         echo "Version changed: ${changed}"
                         return changed
                     }
