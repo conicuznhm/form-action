@@ -14,6 +14,7 @@ pipeline {
         IMAGE_API = "form-api"
         IMAGE_VITE = "form-vite"
         CONTAINER_CREDENTIALS_ID = "ghcr"
+        GIT_CREDENTIALS_ID = "github-pat" // GitHub Personal Access Token for secure access
     }
 
     triggers {
@@ -23,7 +24,14 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/conicuznhm/form-app.git', branch: 'main'
+                // Secure checkout using credentialsId
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/conicuznhm/form-app.git',
+                        credentialsId: "${GIT_CREDENTIALS_ID}" // use GitHub PAT stored in Jenkins
+                    ]]
+                ])
             }
         }
 
