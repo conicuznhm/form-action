@@ -2,7 +2,7 @@
 FROM node:24-alpine AS builder
 
 # Label
-LABEL version="1.0.4"
+LABEL version="1.0.5"
 
 # Set working directory for build
 WORKDIR /app
