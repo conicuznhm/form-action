@@ -35,11 +35,27 @@ pipeline {
                 script {
                     def versionChanged = { path ->
                         def current = getVersion(path)
-                        def previous = sh(
-                            script: "git show HEAD~1:${path} | grep '^LABEL version' | cut -d'\"' -f2 || true",
-                            returnStdout: true
-                        ).trim()
-                        
+                        // def previous = sh(
+                        //     script: "git show HEAD~1:${path} | grep '^LABEL version' | cut -d'\"' -f2 || true",
+                        //     returnStdout: true
+                        // ).trim()
+                        def previous = ""
+
+                        withCredentials([usernamePassword(
+                            credentialsId: "${GITHUB_CREDENTIALS_ID}",
+                            usernameVariable: 'USERNAME',
+                            passwordVariable: 'TOKEN'
+                        )]) {
+                            previous = sh(
+                                script: """
+                                    git remote set-url origin https://${USERNAME}:${TOKEN}@github.com/conicuznhm/form-app.git
+                                    git fetch origin main --quiet
+                                    git show origin/main~1:${path} | grep '^LABEL version' | cut -d'\"' -f2 || true
+                                """,
+                                returnStdout: true
+                            ).trim()
+                        }
+
                         // For debug version comparison
                         echo "Comparing version in: ${path}"
                         echo "Current version: ${current}"
@@ -85,7 +101,11 @@ pipeline {
 
         stage('Login to GHCR') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${CONTAINER_CREDENTIALS_ID}", usernameVariable: 'USERNAME', passwordVariable: 'TOKEN')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: "${CONTAINER_CREDENTIALS_ID}",
+                    usernameVariable: 'USERNAME',
+                    passwordVariable: 'TOKEN'
+                )]) {
                     sh "echo $TOKEN | docker login ghcr.io -u $USERNAME --password-stdin"
                 }
             }
