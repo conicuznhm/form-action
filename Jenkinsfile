@@ -1,6 +1,6 @@
 //Define the helper function at the top level
 def getVersion = { path ->
-    def result = sh(script: "grep '^LABEL version' ${path} | cut -d'\"' -f2 || true", returnStdout: true).trim()
+    def result = sh(script: "grep '^LABEL version' ${path} | cut -d'\"' -f2 | head -n 1 || true", returnStdout: true).trim()
     // return (result != "") ? result : null //explicitly checks for an empty string
     return result ?: null // Groovy shothand for return (result != "") ? result : null
 
@@ -36,7 +36,7 @@ pipeline {
                     def versionChanged = { path ->
                         def current = getVersion(path)
                         // def previous = sh(
-                        //     script: "git show HEAD~1:${path} | grep '^LABEL version' | cut -d'\"' -f2 || true",
+                        //     script: "git show HEAD~1:${path} | grep '^LABEL version' | cut -d'\"' -f2 | head -n 1 || true",
                         //     returnStdout: true
                         // ).trim()
                         def previous = ""
@@ -50,7 +50,7 @@ pipeline {
                                 script: """
                                     git remote set-url origin https://${USERNAME}:${TOKEN}@github.com/conicuznhm/form-app.git
                                     git fetch origin main --quiet
-                                    git show origin/main~1:${path} | grep '^LABEL version' | cut -d'\"' -f2 || true
+                                    git show origin/main~1:${path} | grep '^LABEL version' | cut -d'\"' -f2 | head -n 1 || true
                                 """,
                                 returnStdout: true
                             ).trim()

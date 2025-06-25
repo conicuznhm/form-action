@@ -11,19 +11,23 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
+# //Copy current dir contents into the container current dir (/app)
 COPY . .
 RUN pnpm run build
 
 # Serve with nginx
 FROM nginx:1.27-alpine
 
+# //Working directory is / (root directory) by default in nginx image, blank = WORKDIR /
+# WORKDIR /
+
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy custom nginx config
+# //Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy vite build output to nginx html directory
+# //Copy vite build output to nginx html directory
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
@@ -35,17 +39,26 @@ EXPOSE 80
 
 # //Copy run-tunnel script
 # COPY run-tunnel.sh /run-tunnel.sh
-# RUN chmod +x /run-tunnel.sh
 
 # //Copy start script to handle api proxy connection
 COPY start.sh /start.sh
-RUN chmod +x /start.sh
 
 # //Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
+# Install dos2unix to convert shell script line endings (CRLF to LF)
+RUN apk add --no-cache dos2unix
+# //Fix line endings for shell script (start.sh = /start.sh, now current dir = root)
+# RUN dos2unix /run-tunnel.sh /start.sh /entrypoint.sh
+RUN dos2unix start.sh entrypoint.sh
+
+# //Add execute permissions to scripts
+# RUN chmod +x /run-tunnel.sh /start.sh /entrypoint.sh
+RUN chmod +x /start.sh /entrypoint.sh
+
+# Set the entrypoint to run the start script
 ENTRYPOINT ["/entrypoint.sh"]
+
 
 
 # podman build -t form-vite:v6 .
@@ -65,7 +78,3 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # //to pull image
 # podman pull ghcr.io/conicuznhm/form-vite:1
-
-
-# podman run --name form-vite -p 80:80 -d form-vite:v1
-# podman run --name form-vite -p 9090:80 -d form-vite:v1

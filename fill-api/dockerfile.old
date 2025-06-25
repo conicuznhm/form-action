@@ -4,8 +4,7 @@ FROM node:24-alpine AS builder
 # Label
 LABEL version="1.0.6"
 
-# Set current working directory to /app for build
-# Now current directory is /app, not root dir (/) 
+# Set working directory for build
 WORKDIR /app
 
 # Install pnpm globally
@@ -13,13 +12,17 @@ RUN npm install -g pnpm@10.10.0
 
 # Copy dependency files and install dependencies
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
+# RUN pnpm install --frozen-lockfile
 
-# //Copy current dir contents into the container current dir (/app)
-COPY . .
-
-# //Run Prisma generate to create the Prisma client
+# Copy Prisma schema and generate Prisma client
+COPY prisma ./prisma
 RUN pnpm prisma generate
+
+# Copy the rest of the application code
+COPY src ./src
+COPY tsconfig.json ./
+COPY . .
 
 # Build the application
 RUN pnpm run build
@@ -27,14 +30,16 @@ RUN pnpm run build
 # Runtime stage
 FROM node:24-alpine
 
-# Label
-LABEL version="1.0.6"
-
-# Set working directory for runtime
-# Now current directory is /app, not root dir (/)
+# Set working directory for runtime (now current directory is /app, not root dir( / ))
 WORKDIR /app
 
-# Install pnpm globally in the runtime image
+# //Creates only one image layer, which reduces image size, Faster build due to fewer intermediate layers
+# RUN apk add --no-cache curl && npm install -g pnpm@10.10.0
+
+# //Install curl if needed or use wget instead (node:24-alpine has wget)
+# RUN apk add --no-cache curl
+
+# Install pnpm globally in the runtime image 
 RUN npm install -g pnpm@10.10.0
 
 # Copy only necessary files from the builder stage
@@ -45,20 +50,27 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/entrypoint.sh .
 
-# Install dos2unix to convert shell script line endings (CRLF to LF)
-RUN apk add --no-cache dos2unix
+# Install only production dependencies
+# RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --prod
+RUN pnpm install prisma@6.7.0
 
+# Install dos2unix to convert shell script line endings
+RUN apk add --no-cache dos2unix
 # Fix line endings for shell script (full path /app/entrypoint.sh)
 RUN dos2unix entrypoint.sh
 
 # Make the entrypoint script executable (full path /app/entrypoint.sh)
 RUN chmod +x entrypoint.sh
 
+# //Set environment variable
+# ENV NODE_ENV=deploy
+
 # Expose the port the app will run on
 EXPOSE 8899
 
 # Run the entrypoint script which handles migrations and starts the server
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["sh", "entrypoint.sh"]
 CMD ["pnpm", "start"]
 
 
