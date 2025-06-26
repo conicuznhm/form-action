@@ -13,13 +13,13 @@ podman run --name form-api --env-file .env.local --network my-network -p 8899:88
 podman run --name form-api \
  -e DATABASE_URL=postgresql://postgres:password@form-psql:5432/form_db \
  -e PORT=8899 \
- -e NODE_ENV=development
+ -e NODE_ENV=development \
  --network my-network \
  -p 8899:8899 \
  -d form-api:1
 
 for NODE_ENV, if need to allow reset-rate-limit api => NODE_ENV=development
-              if not allow reset-rate-limit api     => NODE_ENV=deploy or <anything except development>  
+              if not allow reset-rate-limit api     => NODE_ENV=deploy or anything except development  
 
 //to push image to ghcr.io
 podman login ghcr.io

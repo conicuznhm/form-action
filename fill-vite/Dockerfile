@@ -2,7 +2,7 @@
 FROM node:24-alpine AS build
 
 # Label
-LABEL version="1.0.6"
+LABEL version="1.0.7"
 
 WORKDIR /app
 
@@ -77,4 +77,5 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 
 # //to pull image
+# podman login ghcr.io
 # podman pull ghcr.io/conicuznhm/form-vite:1
