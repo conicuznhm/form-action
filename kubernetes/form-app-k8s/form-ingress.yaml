@@ -1,22 +1,50 @@
----
+# //////////////////////////////////////////////////////
 # //note: This file is used to create an Ingress resource for the form application.
 # //don't kubectl apply ingress.yaml, if the image already installed cloudflared and run cloudflared tunnel 
 # vite nginx ingress
+# /////////////////////////////////////////////////////
 
 # //wildcard version of path and host
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vite-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    # - host: vite.local # change this to your domain or IP
+    - host: "" # use empty host ("") to match all requests
+      http:
+        paths:
+          - path: / # match all paths
+            pathType: Prefix
+            backend:
+              service:
+                name: form-vite # name of the service must match service name in vite-deploy.yaml
+                port:
+                  number: 80 # port of the service
+---
+
+# //////////////////////////////////////////////////////////////////
+
+# //specific version of path and host
+# //url = vite.local/form --> forward to --> form-vite service
+# ---
 # apiVersion: networking.k8s.io/v1
 # kind: Ingress
 # metadata:
 #   name: vite-ingress
 #   annotations:
-#     nginx.ingress.kubernetes.io/rewrite-target: /$1
+#     nginx.ingress.kubernetes.io/rewrite-target: /
 # spec:
 #   rules:
 #     # - host: vite.local # change this to your domain or IP
-#     - host: "" # use empty host ("") to match all requests
+#     - host: vite.local # use empty host ("") to match all requests
 #       http:
 #         paths:
-#           - path: /(.*) # match all paths
+#           - path: /form # match specific path
 #             pathType: Prefix
 #             backend:
 #               service:
@@ -25,35 +53,51 @@
 #                   number: 80 # port of the service
 # ---
 
-# //specific version of path and host
-# //url = vite.local/form --> forward to --> form-vite service
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: vite-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-spec:
-  rules:
-    # - host: vite.local # change this to your domain or IP
-    - host: vite.local # use empty host ("") to match all requests
-      http:
-        paths:
-          - path: /form # match specific path
-            pathType: Prefix
-            backend:
-              service:
-                name: form-vite # name of the service must match service name in vite-deploy.yaml
-                port:
-                  number: 80 # port of the service
----
+# //you need to have nginx ingress controller installed in your kubernetes cluster
+# //if not installed, you can install it using helm
+# helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+# helm repo update
+# helm install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
+
+# //use kubectl to apply ingress
+# kubectl apply -f kubernetes/form-app-k8s/form-ingress.yaml
+
+# //to enable ingress-nginx in minikube
+# minikube addons enable ingress # for minikube
+# //check if ingress-nginx is running
+# kubectl get pods -n ingress-nginx
+
+# //to check if ingress is created
+# kubectl get ingress   or   kugectl get ingress -n ingress-nginx 
+
+
+# //use vm nat and port forward 
 # //accessing http://vite.local/form will forward to form-vite service
 # //to map port vmware port 8888 to port 80 of the service
-# //kubectl port-forward --address 0.0.0.0 --namespace ingress-nginx service/ingress-nginx-controller 8888:80
-# //now can access http://localhost:8888/form
+# kubectl port-forward --address 0.0.0.0 --namespace ingress-nginx service/ingress-nginx-controller 8888:80
+# //now can access http://localhost:8888/form  or http://localhost:8888
+
+# //or use socat (minikube ip = ip of container that run minikube or minikube vm)
+# socat TCP-LISTEN:8888,fork,reuseaddr TCP:$(minikube ip):80
+# //now can access http://localhost:8888
+
+# //or use cloudflared tunnel (minikube ip = ip of container that run minikube or minikube vm)
+# cloudflared tunnel --url http://$(minikube ip):80
+# //now can access ***.trycloudflare.com
 
 # //or use /etc/hosts to map vite.local
-# //sudo vi /etc/hosts
+# sudo vi /etc/hosts
 # //add this below line to /etc/hosts    
-# //127.0.0.1   vite.local
+# 127.0.0.1   vite.local
 # //now can access http://vite.local:8888/form
+
+
+# //if not use ingress, you can use kubectl port-forward, nodeport, loadbalancer and minikube tunnel
+
+# //to forward port 80 of the service to port 8888 of the host
+# kubectl port-forward --address 0.0.0.0 server/form-vite 8888:80
+
+# //to create a tunnel to the service 
+# cloudflared tunnel --url http://localhost:8888/form
+# cloudflared tunnel --url http://192.168.177.128:8888  //use address of the host machine that run cloudflared tunnel, not address of minikube vm
+# minikube tunnel # to create a load balancer for the service

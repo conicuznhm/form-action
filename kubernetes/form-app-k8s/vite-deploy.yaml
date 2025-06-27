@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: form-vite
-          image: ghcr.io/conicuznhm/form-vite:2
+          image: ghcr.io/conicuznhm/form-vite:1.0.7
           ports:
             - containerPort: 80
           resources:

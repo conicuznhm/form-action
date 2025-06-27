@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: form-api
-          image: ghcr.io/conicuznhm/form-api:2
+          image: ghcr.io/conicuznhm/form-api:1.0.7
           ports:
             - containerPort: 8899
           envFrom:
