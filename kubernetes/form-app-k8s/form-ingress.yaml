@@ -11,15 +11,15 @@ kind: Ingress
 metadata:
   name: vite-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/rewrite-target: / # rewrite/redirect all requests to root
 spec:
   rules:
     # - host: vite.local # change this to your domain or IP
     - host: "" # use empty host ("") to match all requests
       http:
         paths:
-          - path: / # match all paths
-            pathType: Prefix
+          - path: / # match all requests at the root and any sub-paths
+            pathType: Prefix # Prefix is used to match prefix of the path
             backend:
               service:
                 name: form-vite # name of the service must match service name in vite-deploy.yaml
@@ -37,15 +37,15 @@ spec:
 # metadata:
 #   name: vite-ingress
 #   annotations:
-#     nginx.ingress.kubernetes.io/rewrite-target: /
+#     nginx.ingress.kubernetes.io/rewrite-target: /$1
 # spec:
 #   rules:
 #     # - host: vite.local # change this to your domain or IP
-#     - host: vite.local # use empty host ("") to match all requests
+#     - host: "" # use empty host ("") to match all requests
 #       http:
 #         paths:
-#           - path: /form # match specific path
-#             pathType: Prefix
+#           - path: /(.*) # match all paths
+#             pathType: ImplementationSpecific # ImplementationSpecific is used to match all paths
 #             backend:
 #               service:
 #                 name: form-vite # name of the service must match service name in vite-deploy.yaml
@@ -53,22 +53,27 @@ spec:
 #                   number: 80 # port of the service
 # ---
 
+
 # //you need to have nginx ingress controller installed in your kubernetes cluster
 # //if not installed, you can install it using helm
 # helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 # helm repo update
 # helm install ingress-nginx ingress-nginx/ingress-nginx --namespace ingress-nginx --create-namespace
 
-# //use kubectl to apply ingress
-# kubectl apply -f kubernetes/form-app-k8s/form-ingress.yaml
 
-# //to enable ingress-nginx in minikube
+
+# //minikube already has built-in ingress-nginx controller, so you don't need to install it again
+# //to use ingress-nginx in minikube
 # minikube addons enable ingress # for minikube
 # //check if ingress-nginx is running
 # kubectl get pods -n ingress-nginx
 
+# //use kubectl to apply ingress
+# kubectl apply -f kubernetes/form-app-k8s/form-ingress.yaml
+
 # //to check if ingress is created
 # kubectl get ingress   or   kugectl get ingress -n ingress-nginx 
+
 
 
 # //use vm nat and port forward 
@@ -95,7 +100,7 @@ spec:
 # //if not use ingress, you can use kubectl port-forward, nodeport, loadbalancer and minikube tunnel
 
 # //to forward port 80 of the service to port 8888 of the host
-# kubectl port-forward --address 0.0.0.0 server/form-vite 8888:80
+# kubectl port-forward --address 0.0.0.0 service/form-vite 8888:80
 
 # //to create a tunnel to the service 
 # cloudflared tunnel --url http://localhost:8888/form

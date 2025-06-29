@@ -57,6 +57,10 @@ RUN pnpm install prisma@6.7.0
 
 # Install dos2unix to convert shell script line endings
 RUN apk add --no-cache dos2unix
+
+# Install netcat:nc
+# RUN apk add --no-cache netcat-openbsd
+
 # Fix line endings for shell script (full path /app/entrypoint.sh)
 RUN dos2unix entrypoint.sh
 
@@ -117,4 +121,5 @@ CMD ["pnpm", "start"]
 
 
 # //to pull image
+# podman login ghcr.io
 # podman pull ghcr.io/conicuznhm/form-api:1

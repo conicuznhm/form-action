@@ -49,6 +49,10 @@ COPY entrypoint.sh /entrypoint.sh
 # Install dos2unix to convert shell script line endings (CRLF to LF)
 RUN apk add --no-cache dos2unix
 # //Fix line endings for shell script (start.sh = /start.sh, now current dir = root)
+
+# Install netcat:nc
+# RUN apk add --no-cache netcat-openbsd
+
 # RUN dos2unix /run-tunnel.sh /start.sh /entrypoint.sh
 RUN dos2unix start.sh entrypoint.sh
 

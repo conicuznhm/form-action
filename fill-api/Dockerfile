@@ -48,6 +48,9 @@ COPY --from=builder /app/entrypoint.sh .
 # Install dos2unix to convert shell script line endings (CRLF to LF)
 RUN apk add --no-cache dos2unix
 
+# Install netcat:nc
+# RUN apk add --no-cache netcat-openbsd
+
 # Fix line endings for shell script (full path /app/entrypoint.sh)
 RUN dos2unix entrypoint.sh
 

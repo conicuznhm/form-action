@@ -2,12 +2,12 @@
 set -e
 
 echo "Waiting for form-api to be ready..."
-until nc -z form-api 8899 || nc -z 10.88.0.20 8899; do
+until nc -z form-api 8899; do
     echo "form-api is not ready yet. Waiting..."
-    sleep 1
+    sleep 3
 done
 
-echo "form-api is up - continuing..."
+echo "form-api is up! - continuing..."
 
 
 # //Function to check if form-api is ready

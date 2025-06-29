@@ -8,5 +8,6 @@ data:
   NODE_ENV: development
   PORT: "8899"
   FRONTEND_URL: http://localhost
+  # DATABASE_URL: postgresql://postgres:password@form-psql:5432/form_db
   # DATABASE_URL: postgresql://postgres:password@psql-service:5432/form_db
 ---
