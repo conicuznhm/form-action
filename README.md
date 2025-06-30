@@ -1,3 +1,15 @@
+for run docker or podman container, use tag version v_     i.e => form-vite:v7  form-api:v7
+that images are set check dependency availability logic('until nc -z container-name (or service-name in k8s)' in imgae) 
+to check if dependency app container ready, then run the next app container (psql --> form-api --> form-vite)
+
+for run pod in k8s, use version 1.0._    i.e => form-vite:1.0.8   form-api:1.0.8
+that images are removed check dependency availability logic('until nc -z' in images)
+for flexible use in k8s service name
+in k8s definition file yaml, implemented initContainer instead of 'until nc -z', to check if app service in pod available
+then apply next pod (psql --> form-api --> form-vite)   
+recommend to use tag version at least >= 1.0.8  for clean from in-image check logic
+
+
 Back-end (form-api)  and  database psql
 
 //for build image api

@@ -2,7 +2,7 @@
 FROM node:24-alpine AS build
 
 # Label
-LABEL version="1.0.7"
+LABEL version="1.0.8"
 
 WORKDIR /app
 
@@ -41,7 +41,7 @@ EXPOSE 80
 # COPY run-tunnel.sh /run-tunnel.sh
 
 # //Copy start script to handle api proxy connection
-COPY start.sh /start.sh
+# COPY start.sh /start.sh
 
 # //Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
@@ -54,11 +54,13 @@ RUN apk add --no-cache dos2unix
 # RUN apk add --no-cache netcat-openbsd
 
 # RUN dos2unix /run-tunnel.sh /start.sh /entrypoint.sh
-RUN dos2unix start.sh entrypoint.sh
+# RUN dos2unix start.sh entrypoint.sh
+RUN dos2unix entrypoint.sh
 
 # //Add execute permissions to scripts
 # RUN chmod +x /run-tunnel.sh /start.sh /entrypoint.sh
-RUN chmod +x /start.sh /entrypoint.sh
+# RUN chmod +x /start.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Set the entrypoint to run the start script
 ENTRYPOINT ["/entrypoint.sh"]
