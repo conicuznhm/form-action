@@ -78,7 +78,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 
 # to push image to ghcr.io     :1 != :v1
 # podman login ghcr.io
-# podman tag form-vite:1  ghcr.io/conicuznhm/form-vite:1
+# podman tag form-vite:1 ghcr.io/conicuznhm/form-vite:1
 # podman push ghcr.io/conicuznhm/form-vite:1
 
 

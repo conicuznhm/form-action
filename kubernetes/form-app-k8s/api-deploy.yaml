@@ -14,9 +14,17 @@ spec:
       labels:
         app: form-api
     spec:
+      initContainers:
+        - name: wait-for-psql
+          image: busybox:1.36
+          # command: ['sh', '-c', 'until nc -z form-psql.default.svc.cluster.local 5432; do echo Waiting for form-psql...; sleep 2; done']
+          command: ['sh', '/scripts/wait-for-psql.sh']
+          volumeMounts:
+            - name: script-volume
+              mountPath: /scripts
       containers:
         - name: form-api
-          image: ghcr.io/conicuznhm/form-api:v7  # ghcr.io/conicuznhm/form-api:1.0.8
+          image: ghcr.io/conicuznhm/form-api:1.0.8
           ports:
             - containerPort: 8899
           envFrom:
@@ -43,6 +51,14 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+      volumes:
+        - name: script-volume
+          configMap:
+            name: wait-for-psql-script # configMap with script to wait for psql service
+            items:
+              - key: wait-for-psql.sh
+                path: wait-for-psql.sh
+                mode: 0755
       imagePullSecrets:
         - name: ghcr-secret # credentail for pulling image from private registry
       # restartPolicy: Always # always restart the container if it fails, for development only Always is allowed and automatically default set by kubernetes 
@@ -52,7 +68,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: form-api # name of the service must match proxy_pass in nginx config location /api/ (http://form-api:8899;)
+  name: form-api # name of the service must match proxy_pass in nginx config location /api/ (http://form-api:8899;), and also must match hostname and port in initiContainer wait-for-api
 spec:
   type: ClusterIP
   selector:

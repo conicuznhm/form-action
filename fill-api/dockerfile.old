@@ -116,7 +116,7 @@ CMD ["pnpm", "start"]
 
 # //to push image to ghcr.io    :1 != :v1
 # podman login ghcr.io
-# podman tag form-api:1  ghcr.io/conicuznhm/form-api:1
+# podman tag form-api:1 ghcr.io/conicuznhm/form-api:1
 # podman push ghcr.io/conicuznhm/form-api:1
 
 

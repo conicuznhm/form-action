@@ -85,7 +85,9 @@ pipeline {
                         def version = getVersion('fill-api/Dockerfile')
                         env.API_TAG = version
                         echo "Building form-api:${version} image..."
+                        // sh "docker build -t $REGISTRY/$IMAGE_API:${version} -t $REGISTRY/$IMAGE_API:latest ./fill-api"
                         sh "docker build -t $REGISTRY/$IMAGE_API:${version} ./fill-api"
+                        sh "docker tag $REGISTRY/$IMAGE_API:${version} $REGISTRY/$IMAGE_API:latest" // Tag as latest
                     }
 
                     if (env.BUILD_VITE?.toBoolean()) {
@@ -93,7 +95,9 @@ pipeline {
                         def version = getVersion('fill-vite/Dockerfile')
                         env.VITE_TAG = version
                         echo "Building form-vite:${version} image..."
-                        sh "docker build -t $REGISTRY/$IMAGE_VITE:${version} ./fill-vite"
+                        sh "docker build -t $REGISTRY/$IMAGE_VITE:${version} -t $REGISTRY/$IMAGE_VITE:latest ./fill-vite"
+                        // sh "docker build -t $REGISTRY/$IMAGE_VITE:${version} ./fill-vite"
+                        // sh "docker tag $REGISTRY/$IMAGE_VITE:${version} $REGISTRY/$IMAGE_VITE:latest" // Tag as latest
                     }
                 }
             }
@@ -117,10 +121,12 @@ pipeline {
                     if (env.BUILD_API?.toBoolean()) {
                         echo "Pushing $REGISTRY/$IMAGE_API:${env.API_TAG} image..."
                         sh "docker push $REGISTRY/$IMAGE_API:${env.API_TAG}"
+                        sh "docker push $REGISTRY/$IMAGE_API:latest" // Push latest tag as well
                     }
                     if (env.BUILD_VITE?.toBoolean()) {
                         echo "Pushing $REGISTRY/$IMAGE_VITE:${env.VITE_TAG} image..."
                         sh "docker push $REGISTRY/$IMAGE_VITE:${env.VITE_TAG}"
+                        sh "docker push $REGISTRY/$IMAGE_VITE:latest" // Push latest tag as well
                     }
                 }
             }

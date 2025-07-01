@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wait-for-psql-script
+data:
+  wait-for-psql.sh: |
+    #!/bin/sh
+    TIMEOUT=60
+    COUNT=0
+    echo "Waiting for form-psql to be ready..."
+    until nc -z form-psql.default.svc.cluster.local 5432; do
+      echo "form-psql is not ready yet. Waiting..."
+      sleep 2
+      COUNT=$((COUNT + 2))
+      if [ $COUNT -ge $TIMEOUT ]; then
+        echo "Timeout waiting for form-psql after ${TIMEOUT} seconds"
+        exit 1
+      fi
+    done
+    echo "form-psql is up! - continuing..."
+---

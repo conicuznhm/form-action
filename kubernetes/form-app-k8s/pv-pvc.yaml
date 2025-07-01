@@ -9,7 +9,7 @@ spec:
     storage: 1Gi
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain  # Change to 'Delete' if you want to delete PV when PVC is deleted, by default value is ':Delete'
+  persistentVolumeReclaimPolicy: Retain  # Change to 'Delete' if you want to delete PV when PVC is deleted, by default value is ':Delete', change to 'Retain' to keep PV after PVC deletion
   hostPath:
     path: /data/psql  # Ensure this path exists on the host machine
 ---
