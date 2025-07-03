@@ -1,0 +1,81 @@
+name: Build and Push
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io/conicuznhm
+  IMAGE_API: form-api
+  IMAGE_VITE: form-vite
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Fetch previous commit
+        run: git fetch origin main --quiet
+      
+      # //Check form-api version
+      - name: Get API version
+        id: api_ver
+        run: |
+          current=$(grep '^LABEL version' fill-api/Dockerfile | cut -d'"' -f2 || true)
+          previous=$(git show origin/main~1:fill-api/Dockerfile | grep '^LABEL version' | cut -d'"' -f2 || true)
+          if [[ "$current" != "$previous" && -n "$current" && -n "$previous" ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "version=$current" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      # //Check form-vite version
+      - name: Get VITE version
+        id: vite_ver
+        run: |
+          current=$(grep '^LABEL version' fill-vite/Dockerfile | cut -d'"' -f2 || true)
+          previous=$(git show origin/main~1:fill-vite/Dockerfile | grep '^LABEL version' | cut -d'"' -f2 || true)
+          if [[ "$current" != "$previous" && -n "$current" && -n "$previous" ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "version=$current" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+      
+      # //Shared Docker login for both images
+      - name: Login to Github container registry (GHCR)
+        if: steps.api_ver.outputs.changed == 'true' || steps.vite_ver.outputs.changed == 'true'
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+
+      # //Build and push form-api
+      - name: Build and push form-api
+        if: steps.api_ver.outputs.changed == 'true'
+        run: |
+          docker build -t $REGISTRY/$IMAGE_API:${{ steps.api_ver.outputs.version }} ./fill-api
+          docker tag $REGISTRY/$IMAGE_API:${{ steps.api_ver.outputs.version }} $REGISTRY/$IMAGE_API:latest
+          docker push $REGISTRY/$IMAGE_API:${{ steps.api_ver.outputs.version }}
+          docker push $REGISTRY/$IMAGE_API:latest
+
+      # //Build and push form-vite
+      - name: Build and push form-vite
+        if: steps.vite_ver.outputs.changed == 'true'
+        run: |
+          docker build -t $REGISTRY/$IMAGE_VITE:${{ steps.vite_ver.outputs.version }} ./fill-vite
+          docker tag $REGISTRY/$IMAGE_VITE:${{ steps.vite_ver.outputs.version }} $REGISTRY/$IMAGE_VITE:latest
+          docker push $REGISTRY/$IMAGE_VITE:${{ steps.vite_ver.outputs.version }}
+          docker push $REGISTRY/$IMAGE_VITE:latest
+      
+      # //Cleanup unused images and credential
+      - name: Cleanup unused images and credential
+        if: steps.api_ver.outputs.changed == 'true' || steps.vite_ver.outputs.changed == 'true'
+        run: |
+          docker rmi $REGISTRY/$IMAGE_API:latest || true
+          docker rmi $REGISTRY/$IMAGE_VITE:latest || true
+          docker logout ghcr.io
+          
+      # docker image prune -f   # //uncomment and move under run: | -> if you want to remove unused images cache
+      
