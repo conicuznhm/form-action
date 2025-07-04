@@ -25,16 +25,18 @@ jobs:
       - name: Get API version
         id: api_ver
         run: |
-          current=$(grep '^LABEL version' fill-api/Dockerfile | cut -d'"' -f2 | tr -d '[:space:]' || true)
-          previous=$(git show origin/main~1:fill-api/Dockerfile | grep '^LABEL version' | cut -d'"' -f2 | tr -d '[:space:]' || true)
+          current=$(grep '^LABEL version' fill-api/Dockerfile | cut -d'"' -f2 | head -n 1 || true)
+          previous=$(git show origin/main~1:fill-api/Dockerfile | grep '^LABEL version' | cut -d'"' -f2 | head -n 1 || true)
 
           echo "Debug: current=${current}"
           echo "Debug: previous=${previous}"
 
           if [[ "$current" != "$previous" && -n "$current" && -n "$previous" ]]; then
+            echo "Version changed: true"
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "version=$current" >> $GITHUB_OUTPUT
           else
+            echo "Version changed: false"
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
@@ -42,16 +44,18 @@ jobs:
       - name: Get VITE version
         id: vite_ver
         run: |
-          current=$(grep '^LABEL version' fill-vite/Dockerfile | cut -d'"' -f2 || true)
-          previous=$(git show origin/main~1:fill-vite/Dockerfile | grep '^LABEL version' | cut -d'"' -f2 || true)
+          current=$(grep '^LABEL version' fill-vite/Dockerfile | cut -d'"' -f2 | head -n 1 || true)
+          previous=$(git show origin/main~1:fill-vite/Dockerfile | grep '^LABEL version' | cut -d'"' -f2 | head -n 1 || true)
 
           echo "Debug: current=${current}"
           echo "Debug: previous=${previous}"
 
           if [[ "$current" != "$previous" && -n "$current" && -n "$previous" ]]; then
+            echo "Version changed: true"
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "version=$current" >> $GITHUB_OUTPUT
           else
+            echo "Version changed: false"
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
       
