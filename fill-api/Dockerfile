@@ -2,7 +2,7 @@
 FROM node:24-alpine AS builder
 
 # Label
-LABEL version="1.1.0"
+LABEL version="1.1.1"
 
 # Set current working directory to /app for build
 # Now current directory is /app, not root dir (/) 
@@ -28,7 +28,7 @@ RUN pnpm run build
 FROM node:24-alpine
 
 # Label
-LABEL version="1.1.0"
+LABEL version="1.1.1"
 
 # Set working directory for runtime
 # Now current directory is /app, not root dir (/)

@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Fetch the last two commits to compare versions, set fetch-depth: 0 => would fetch all history
       
       - name: Fetch previous commit
         run: git fetch origin main --quiet
