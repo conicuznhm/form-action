@@ -6,95 +6,101 @@ on:
       - main
 
 env:
-  IMAGE_API: form-api
-  IMAGE_VITE: form-vite
+  REGISTRY: ghcr.io/${{ secrets.GHCR_USERNAME }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        image:
+          - name: form-api
+            path: fill-api
+          - name: form-vite
+            path: fill-vite
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2 # Fetch the last two commits to compare versions, set fetch-depth: 0 => would fetch all history
       
-      - name: Fetch previous commit
-        run: git fetch origin main --quiet
-      
-      # //Check form-api version
-      - name: Get API version
-        id: api_ver
+      - name: Install jq
+        run: sudo apt update && sudo apt install -y jq
+
+      - name: Compare version and decide to build
+        id: version_check
         run: |
-          current=$(grep '^LABEL version' fill-api/Dockerfile | cut -d'"' -f2 | head -n 1 || true)
-          previous=$(git show origin/main~1:fill-api/Dockerfile | grep '^LABEL version' | cut -d'"' -f2 | head -n 1 || true)
+          IMAGE=${{ matrix.image.name }}
+          PATH=${{ matrix.image.path }}
+          IMAGE_PATH="${{ secrets.GHCR_USERNAME }}/$IMAGE"
 
-          echo "Debug: current=${current}"
-          echo "Debug: previous=${previous}"
+          DOCKERFILE="$PATH/Dockerfile"
+          current=$(grep '^LABEL version' "$DOCKERFILE" | cut -d'"' -f2 | head -n1)
+          echo "Current version in Dockerfile: $current"
 
-          if [[ "$current" != "$previous" && -n "$current" && -n "$previous" ]]; then
-            echo "Version changed: true"
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "version=$current" >> $GITHUB_OUTPUT
-          else
-            echo "Version changed: false"
+          AUTH_TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:${IMAGE_PATH}:pull" \
+            -u "${{ secrets.GHCR_USERNAME }}:${{ secrets.GHCR_TOKEN }}" | jq -r .token)
+
+          if [[ -z "$AUTH_TOKEN" ]]; then
+            echo "Failed to obtain AUTH_TOKEN. Exiting."
             echo "changed=false" >> $GITHUB_OUTPUT
+            exit 1
           fi
 
-      # //Check form-vite version
-      - name: Get VITE version
-        id: vite_ver
-        run: |
-          current=$(grep '^LABEL version' fill-vite/Dockerfile | cut -d'"' -f2 | head -n 1 || true)
-          previous=$(git show origin/main~1:fill-vite/Dockerfile | grep '^LABEL version' | cut -d'"' -f2 | head -n 1 || true)
+          tags=$(curl -s -H "Authorization: Bearer ${AUTH_TOKEN}" \
+            "https://ghcr.io/v2/$IMAGE_PATH/tags/list" | jq -r '.tags[]?')
 
-          echo "Debug: current=${current}"
-          echo "Debug: previous=${previous}"
+          latest_version=$(echo "$tags" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
 
-          if [[ "$current" != "$previous" && -n "$current" && -n "$previous" ]]; then
-            echo "Version changed: true"
-            echo "changed=true" >> $GITHUB_OUTPUT
-            echo "version=$current" >> $GITHUB_OUTPUT
-          else
-            echo "Version changed: false"
+          if ! echo "$current" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Current version is not in semantic version format (X.Y.Z) - skipping"
             echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Current version is in X.Y.Z format - proceeding"
+            if [[ -z "$latest_version" ]]; then
+              echo "No existing valid tags found - building"
+              echo "changed=true" >> $GITHUB_OUTPUT
+            elif [[ "$current" == "$latest_version" ]]; then
+              echo "Current version $current is already existing - skipping"
+              echo "changed=false" >> $GITHUB_OUTPUT
+            else
+              highest_version=$(printf '%s\n%s' "$current" "$latest_version" | sort -V | tail -n1)
+              if [[ "$current" == "$highest_version" ]]; then
+                echo "Current version: $current > Latest: $latest_version - building"
+                echo "changed=true" >> $GITHUB_OUTPUT
+              else
+                echo "Current version: $current < Latest: $latest_version - skipping"
+                echo "changed=false" >> $GITHUB_OUTPUT
+              fi
+            fi
           fi
+
+          echo "version=$current" >> $GITHUB_OUTPUT
       
-      # //Shared Docker login for both images
+      # //Docker login
       - name: Login to Github container registry (GHCR)
-        if: steps.api_ver.outputs.changed == 'true' || steps.vite_ver.outputs.changed == 'true'
+        if: steps.version_check.outputs.changed == 'true'
         run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
 
-      # //Set REGISTRY environment variable
-      - name: Set REGISTRY env dynamically
-        run: echo "REGISTRY=ghcr.io/${{ secrets.GHCR_USERNAME }}" >> $GITHUB_ENV
-
-      # //Build and push form-api
-      - name: Build and push form-api
-        if: steps.api_ver.outputs.changed == 'true'
+      # //Build and push image (matrix)
+      - name: Build and push image
+        if: steps.version_check.outputs.changed == 'true'
         run: |
-          echo "Building form-api:${{ steps.api_ver.outputs.version }}"
-          docker build -t $REGISTRY/$IMAGE_API:${{ steps.api_ver.outputs.version }} ./fill-api
-          docker tag $REGISTRY/$IMAGE_API:${{ steps.api_ver.outputs.version }} $REGISTRY/$IMAGE_API:latest
-          docker push $REGISTRY/$IMAGE_API:${{ steps.api_ver.outputs.version }}
-          docker push $REGISTRY/$IMAGE_API:latest
+          IMAGE=${{ matrix.image.name }}
+          PATH=${{ matrix.image.path }}
+          VERSION=${{ steps.version_check.outputs.version }}
 
-      # //Build and push form-vite
-      - name: Build and push form-vite
-        if: steps.vite_ver.outputs.changed == 'true'
-        run: |
-          echo "Building form-vite:${{ steps.vite_ver.outputs.version }}"
-          docker build -t $REGISTRY/$IMAGE_VITE:${{ steps.vite_ver.outputs.version }} ./fill-vite
-          docker tag $REGISTRY/$IMAGE_VITE:${{ steps.vite_ver.outputs.version }} $REGISTRY/$IMAGE_VITE:latest
-          docker push $REGISTRY/$IMAGE_VITE:${{ steps.vite_ver.outputs.version }}
-          docker push $REGISTRY/$IMAGE_VITE:latest
-      
+          echo "Building $IMAGE:$VERSION"
+          docker build -t $REGISTRY/$IMAGE:$VERSION $PATH
+          docker tag $REGISTRY/$IMAGE:$VERSION $REGISTRY/$IMAGE:latest
+          docker push $REGISTRY/$IMAGE:$VERSION
+          docker push $REGISTRY/$IMAGE:latest
+
       # //Cleanup unused images and credential
       - name: Cleanup unused images and credential
-        if: steps.api_ver.outputs.changed == 'true' || steps.vite_ver.outputs.changed == 'true'
+        if: steps.version_check.outputs.changed == 'true'
         run: |
-          docker rmi $REGISTRY/$IMAGE_API:latest || true
-          docker rmi $REGISTRY/$IMAGE_VITE:latest || true
+          docker rmi $REGISTRY/${{ matrix.image.name }}:latest || true
           docker logout ghcr.io
           
       # docker image prune -f   # //uncomment and move under run: | -> if you want to remove unused images cache
-      
