@@ -5,9 +5,12 @@ on:
     branches:
       - main
 
-# env:
-#   GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-#   REGISTRY: ghcr.io
+env:
+  EMAIL_SERVER: ${{ vars.EMAIL_SERVER }}
+  EMAIL_PORT: ${{ vars.EMAIL_PORT }}
+  # EMAIL_TO: ${{ secrets.EMAIL_USERNAME }}
+  # GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+  # REGISTRY: ghcr.io
 
 jobs:
   build-and-push:
@@ -119,30 +122,35 @@ jobs:
         run: |
           docker rmi ${{ env.REGISTRY }}/${{ matrix.image.name }}:latest || true
           docker logout ghcr.io
-          
-      # docker image prune -f   # //uncomment and move under run: | -> if you want to remove unused images cache
-  
+
+      # //uncomment, if you want to remove unused images cache
+      - name: Prune unused Docker layers
+        if: steps.version_check.outputs.changed == 'true'
+        run: docker image prune -f     
+
   # //to send email 
-  # notify:
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   if: always() # //always run this job even if the previous one fails
-  #   steps:
-  #     - name: Send notification email
-  #       uses: dawidd6/action-send-mail@v3
-  #       with:
-  #         server_address: ${{ secrets.EMAIL_SERVER }}
-  #         server_port: ${{ secrets.EMAIL_PORT }}
-  #         username: ${{ secrets.EMAIL_USERNAME }}
-  #         password: ${{ secrets.EMAIL_PASSWORD }} # //use app password if 2FA is enabled
-  #         subject: |
-  #           GitHub CI - Build ${{ needs.build-and-push.result }}
-  #         to: ${{ secrets.EMAIL_TO }}
-  #         from: GitHub Action <${{ secrets.EMAIL_USERNAME }}>
-  #         body: |
-  #           Build status: ${{ needs.build-and-push.result }}
-  #           Repo: ${{ github.repository }}
-  #           Commit: ${{ github.sha }}
-  #           Triggered by: ${{ github.actor }}
-  #           Workflow: ${{ github.workflow }}
-  #           URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  notify:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: always() # //always run this job even if the previous one fails
+    steps:
+      - name: Send notification email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: $EMAIL_SERVER
+          server_port: $EMAIL_PORT
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }} # //use app password if 2FA is enabled
+          subject: |
+            GitHub CI - ${{ github.repository }}: Build ${{ needs.build-and-push.result }}
+          to: ${{ vars.EMAIL_TO }}
+          from: GitHub Action <${{ secrets.EMAIL_USERNAME }}>
+          body: |
+            Build status: ${{ needs.build-and-push.result }}
+
+            Repo: ${{ github.repository }}
+            Commit: ${{ github.sha }}
+            Triggered by: ${{ github.actor }}
+            Workflow: ${{ github.workflow }}
+            
+            URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
