@@ -32,17 +32,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Install required CLI tools
-        run: sudo apt update && sudo apt install -y curl jq coreutils grep
+      # - name: Install required CLI tools
+      #   run: sudo apt-get update && sudo apt-get install -y curl jq coreutils grep
 
       - name: Compare version and decide to build
         id: version_check
         run: |
           IMAGE=${{ matrix.image.name }}
-          PATH=${{ matrix.image.path }}
+          APP_PATH=${{ matrix.image.path }}
           IMAGE_PATH="${{ secrets.GHCR_USERNAME }}/$IMAGE"
 
-          DOCKERFILE="$PATH/Dockerfile"
+          DOCKERFILE="$APP_PATH/Dockerfile"
           current=$(grep '^LABEL version' "$DOCKERFILE" | cut -d'"' -f2 | head -n1)
           echo "Current version in Dockerfile: $current"
 
@@ -95,11 +95,11 @@ jobs:
         if: steps.version_check.outputs.changed == 'true'
         run: |
           IMAGE=${{ matrix.image.name }}
-          PATH=${{ matrix.image.path }}
+          APP_PATH=${{ matrix.image.path }}
           VERSION=${{ steps.version_check.outputs.version }}
 
           echo "Building $IMAGE:$VERSION"
-          docker build -t ${{ env.REGISTRY }}/$IMAGE:$VERSION $PATH
+          docker build -t ${{ env.REGISTRY }}/$IMAGE:$VERSION $APP_PATH
           docker tag ${{ env.REGISTRY }}/$IMAGE:$VERSION ${{ env.REGISTRY }}/$IMAGE:latest
           docker push ${{ env.REGISTRY }}/$IMAGE:$VERSION
           docker push ${{ env.REGISTRY }}/$IMAGE:latest

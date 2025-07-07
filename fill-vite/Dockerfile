@@ -2,7 +2,7 @@
 FROM node:24-alpine AS build
 
 # Label
-LABEL version="1.1.4"
+LABEL version="1.1.5"
 
 WORKDIR /app
 
