@@ -7,7 +7,7 @@ on:
 
 env:
   EMAIL_SERVER: ${{ vars.EMAIL_SERVER }}
-  EMAIL_PORT: ${{ vars.EMAIL_PORT }}
+  # EMAIL_PORT: ${{ vars.EMAIL_PORT }}
   # EMAIL_TO: ${{ secrets.EMAIL_USERNAME }}
   # GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
   # REGISTRY: ghcr.io
@@ -137,8 +137,8 @@ jobs:
       - name: Send notification email
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: $EMAIL_SERVER
-          server_port: $EMAIL_PORT
+          server_address: ${{ env.EMAIL_SERVER }}
+          server_port: ${{ vars.EMAIL_PORT }}
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }} # //use app password if 2FA is enabled
           subject: |
@@ -152,5 +152,5 @@ jobs:
             Commit: ${{ github.sha }}
             Triggered by: ${{ github.actor }}
             Workflow: ${{ github.workflow }}
-            
+
             URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
