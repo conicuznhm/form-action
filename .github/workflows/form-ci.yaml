@@ -5,13 +5,21 @@ on:
     branches:
       - main
 
-env:
-  REGISTRY: ghcr.io/${{ secrets.GHCR_USERNAME }}
+# env:
+#   GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+#   REGISTRY: ghcr.io
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write # //write permission is required to push images to GHCR
+
+    env:
+      REGISTRY: ghcr.io/${{ secrets.GHCR_USERNAME }}
+    
     strategy:
       matrix:
         image:
@@ -52,7 +60,7 @@ jobs:
 
           latest_version=$(echo "$tags" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
 
-          if ! echo "$current" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+          if ! echo "$current" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?$'; then
             echo "Current version is not in semantic version format (X.Y.Z) - skipping"
             echo "changed=false" >> $GITHUB_OUTPUT
           else
@@ -91,16 +99,50 @@ jobs:
           VERSION=${{ steps.version_check.outputs.version }}
 
           echo "Building $IMAGE:$VERSION"
-          docker build -t $REGISTRY/$IMAGE:$VERSION $PATH
-          docker tag $REGISTRY/$IMAGE:$VERSION $REGISTRY/$IMAGE:latest
-          docker push $REGISTRY/$IMAGE:$VERSION
-          docker push $REGISTRY/$IMAGE:latest
+          docker build -t ${{ env.REGISTRY }}/$IMAGE:$VERSION $PATH
+          docker tag ${{ env.REGISTRY }}/$IMAGE:$VERSION ${{ env.REGISTRY }}/$IMAGE:latest
+          docker push ${{ env.REGISTRY }}/$IMAGE:$VERSION
+          docker push ${{ env.REGISTRY }}/$IMAGE:latest
+
+      # //Summary
+      - name: Post summary
+        run: |
+          echo "### CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Image: ${{ matrix.image.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ steps.version_check.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build triggered: ${{ steps.version_check.outputs.changed }}" >> $GITHUB_STEP_SUMMARY
 
       # //Cleanup unused images and credential
       - name: Cleanup unused images and credential
         if: steps.version_check.outputs.changed == 'true'
+        continue-on-error: true
         run: |
-          docker rmi $REGISTRY/${{ matrix.image.name }}:latest || true
+          docker rmi ${{ env.REGISTRY }}/${{ matrix.image.name }}:latest || true
           docker logout ghcr.io
           
       # docker image prune -f   # //uncomment and move under run: | -> if you want to remove unused images cache
+  
+  # //to send email 
+  # notify:
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+  #   if: always() # //always run this job even if the previous one fails
+  #   steps:
+  #     - name: Send notification email
+  #       uses: dawidd6/action-send-mail@v3
+  #       with:
+  #         server_address: ${{ secrets.EMAIL_SERVER }}
+  #         server_port: ${{ secrets.EMAIL_PORT }}
+  #         username: ${{ secrets.EMAIL_USERNAME }}
+  #         password: ${{ secrets.EMAIL_PASSWORD }} # //use app password if 2FA is enabled
+  #         subject: |
+  #           GitHub CI - Build ${{ needs.build-and-push.result }}
+  #         to: ${{ secrets.EMAIL_TO }}
+  #         from: GitHub Action <${{ secrets.EMAIL_USERNAME }}>
+  #         body: |
+  #           Build status: ${{ needs.build-and-push.result }}
+  #           Repo: ${{ github.repository }}
+  #           Commit: ${{ github.sha }}
+  #           Triggered by: ${{ github.actor }}
+  #           Workflow: ${{ github.workflow }}
+  #           URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
