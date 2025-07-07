@@ -124,9 +124,9 @@ jobs:
           docker logout ghcr.io
 
       # //uncomment, if you want to remove unused images cache
-      - name: Prune unused Docker layers
-        if: steps.version_check.outputs.changed == 'true'
-        run: docker image prune -f     
+      # - name: Prune unused Docker layers
+      #   if: steps.version_check.outputs.changed == 'true'
+      #   run: docker image prune -f     
 
   # //to send email 
   notify:
