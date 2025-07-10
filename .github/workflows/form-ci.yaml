@@ -131,7 +131,7 @@ jobs:
       #   if: steps.version_check.outputs.changed == 'true'
       #   run: docker image prune -f     
 
-  # //to send email 
+  # //to send email (gmail j***)
   notify:
     needs: build-and-push
     runs-on: ubuntu-latest
