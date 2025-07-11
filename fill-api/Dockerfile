@@ -2,7 +2,7 @@
 FROM node:24-alpine AS builder
 
 # Label
-LABEL version="1.1.8"
+LABEL version="1.1.9"
 
 # Set current working directory to /app for build
 # Now current directory is /app, not root dir (/) 

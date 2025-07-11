@@ -64,9 +64,9 @@ jobs:
           tags=$(curl -s -H "Authorization: Bearer ${AUTH_TOKEN}" \
             "https://ghcr.io/v2/$IMAGE_PATH/tags/list" | jq -r '.tags[]?')
 
-          latest_version=$(echo "$tags" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          latest_version=$(echo "$tags" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.\-]+)?$' | sort -V | tail -n1)
 
-          if ! echo "$current" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?$'; then
+          if ! echo "$current" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.\-]+)?$'; then
             echo "Current version is not in semantic version format (X.Y.Z) - skipping"
             echo "changed=false" >> $GITHUB_OUTPUT
           else
