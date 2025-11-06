@@ -2,7 +2,7 @@
 FROM node:24-alpine AS build
 
 # Label
-LABEL version="1.1.9"
+LABEL version="1.1.10"
 
 WORKDIR /app
 
@@ -16,7 +16,12 @@ COPY . .
 RUN pnpm run build
 
 # Serve with nginx
-FROM nginx:1.27-alpine
+# FROM nginx:1.27-alpine
+FROM nginx:1.29-alpine
+
+# Update Alpine packages in the final image to reduce known vulnerabilities
+# (keeps image small while applying upstream security fixes)
+RUN apk update && apk upgrade --no-cache
 
 # //Working directory is / (root directory) by default in nginx image, blank = WORKDIR /
 # WORKDIR /
@@ -73,6 +78,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 # //to specify a network name  (network name = my-network), 
 # //in this setting(use container name to connect) form-psql, form-api, form-vite need to be in the same network(my-network) 
 
+# to run form-vite container
 # podman run --name form-vite --network my-network -p 80:80 -d form-vite:v6
 
 
