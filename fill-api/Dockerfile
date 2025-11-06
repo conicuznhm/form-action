@@ -2,7 +2,7 @@
 FROM node:24-alpine AS builder
 
 # Label
-LABEL version="1.1.9"
+LABEL version="1.1.10"
 
 # Set current working directory to /app for build
 # Now current directory is /app, not root dir (/) 
@@ -91,6 +91,7 @@ CMD ["pnpm", "start"]
 
 # podman volume create form-data
 # podman run --name form-psql -e POSTGRES_PASSWORD=password -e POSTGRES_DB=form_db -v form-data:/var/lib/postgresql/data --network my-network -p 5432:5432 -d postgres:17.5
+
 # //or
 # podman run --name form-psql \
 # -e POSTGRES_PASSWORD=password \
